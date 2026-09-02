@@ -89,6 +89,21 @@ export class TicketController {
       const ticketId = parseInt(req.params.id, 10);
       const { title, description, category, priority, status, assignedToUserId, notes } = req.body;
 
+      const existing = await TicketService.getTicketById(ticketId);
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          message: `Ticket with ID ${ticketId} not found`
+        });
+      }
+
+      if (existing.Status === 'Closed') {
+        return res.status(409).json({
+          success: false,
+          message: 'Closed tickets cannot be updated'
+        });
+      }
+
       const updatedTicket = await TicketService.updateTicket(ticketId, {
         title,
         description,
@@ -98,13 +113,6 @@ export class TicketController {
         assignedToUserId: assignedToUserId ? parseInt(assignedToUserId, 10) : undefined,
         notes
       });
-
-      if (!updatedTicket) {
-        return res.status(404).json({
-          success: false,
-          message: `Ticket with ID ${ticketId} not found`
-        });
-      }
 
       return res.status(200).json({
         success: true,

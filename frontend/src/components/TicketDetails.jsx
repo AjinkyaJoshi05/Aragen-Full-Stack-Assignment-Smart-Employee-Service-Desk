@@ -4,7 +4,7 @@ import PriorityBadge from './PriorityBadge';
 import StatusBadge from './StatusBadge';
 import LoadingState from './LoadingState';
 import ErrorMessage from './ErrorMessage';
-import { X, CheckCircle, MessageSquare, Clock, User, ShieldAlert, Check, FileText, Send } from 'lucide-react';
+import { X, CheckCircle, MessageSquare, Clock, User, ShieldAlert, Check, FileText, Send, Lock } from 'lucide-react';
 
 export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
   const [ticket, setTicket] = useState(null);
@@ -236,60 +236,72 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                   </div>
 
                   {/* Support Controls Form */}
-                  <form onSubmit={handleUpdate} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                    <h4 className="font-bold text-slate-900 text-xs border-b border-slate-200 pb-2">
-                      Support Team Actions
-                    </h4>
+                  {ticket.Status === 'Closed' ? (
+                    <div className="bg-slate-100 border border-slate-200 rounded-xl p-5 text-center space-y-2">
+                      <div className="flex items-center justify-center gap-2 text-slate-800 font-bold text-xs">
+                        <Lock className="w-4 h-4 text-slate-600" />
+                        Ticket Closed & Locked
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        This ticket is closed and read-only. No further modifications can be made.
+                      </p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleUpdate} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                      <h4 className="font-bold text-slate-900 text-xs border-b border-slate-200 pb-2">
+                        Support Team Actions
+                      </h4>
 
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Status</label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900"
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Status</label>
+                        <select
+                          value={status}
+                          onChange={(e) => setStatus(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900"
+                          disabled={updating}
+                        >
+                          <option value="Open">Open</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Resolved">Resolved</option>
+                          <option value="Closed">Closed</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Priority</label>
+                        <select
+                          value={priority}
+                          onChange={(e) => setPriority(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900"
+                          disabled={updating}
+                        >
+                          <option value="Low">Low Priority (Green)</option>
+                          <option value="Medium">Medium Priority (Yellow)</option>
+                          <option value="High">High Priority (Red)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Add Note</label>
+                        <textarea
+                          rows="2"
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          placeholder="Add resolution details..."
+                          className="w-full p-2 bg-white border border-slate-200 rounded text-xs text-slate-900"
+                          disabled={updating}
+                        ></textarea>
+                      </div>
+
+                      <button
+                        type="submit"
                         disabled={updating}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded shadow-sm transition-colors"
                       >
-                        <option value="Open">Open</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Resolved">Resolved</option>
-                        <option value="Closed">Closed</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Priority</label>
-                      <select
-                        value={priority}
-                        onChange={(e) => setPriority(e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900"
-                        disabled={updating}
-                      >
-                        <option value="Low">Low Priority (Green)</option>
-                        <option value="Medium">Medium Priority (Yellow)</option>
-                        <option value="High">High Priority (Red)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Add Note</label>
-                      <textarea
-                        rows="2"
-                        value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        placeholder="Add resolution details..."
-                        className="w-full p-2 bg-white border border-slate-200 rounded text-xs text-slate-900"
-                        disabled={updating}
-                      ></textarea>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={updating}
-                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded shadow-sm transition-colors"
-                    >
-                      {updating ? 'Saving Changes...' : 'Update Ticket'}
-                    </button>
-                  </form>
+                        {updating ? 'Saving Changes...' : 'Update Ticket'}
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             </>

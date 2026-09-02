@@ -117,6 +117,12 @@ export class TicketService {
       return null;
     }
 
+    if (existing.Status === 'Closed') {
+      const error = new Error('Closed tickets cannot be updated');
+      error.statusCode = 409;
+      throw error;
+    }
+
     const newTitle = title !== undefined ? title.trim() : existing.Title;
     const newDescription = description !== undefined ? description.trim() : existing.Description;
     const newCategory = category !== undefined ? category.trim() : existing.Category;
