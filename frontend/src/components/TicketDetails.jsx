@@ -6,7 +6,7 @@ import LoadingState from './LoadingState';
 import ErrorMessage from './ErrorMessage';
 import { X, CheckCircle, MessageSquare, Clock, User, ShieldAlert, Check, FileText, Send, Lock } from 'lucide-react';
 
-export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
+export const TicketDetails = ({ ticketId, onClose, onTicketUpdated, currentUser }) => {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,6 +24,8 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeNote, setCloseNote] = useState('');
   const [closing, setClosing] = useState(false);
+  const canManageTickets = currentUser?.Role === 'Support Staff' || currentUser?.Role === 'Manager';
+  const canAssignTickets = currentUser?.Role === 'Manager';
 
   // Load ticket details from API
   useEffect(() => {
@@ -49,8 +51,13 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
     loadTicket();
   }, [ticketId]);
 
-  // Load assignable users for dropdown
+  // Managers alone can assign tickets, and only Support Staff are assignable.
   useEffect(() => {
+    if (!canAssignTickets) {
+      setUsers([]);
+      return;
+    }
+
     async function loadUsers() {
       try {
         const res = await api.getUsers();
@@ -62,7 +69,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
       }
     }
     loadUsers();
-  }, []);
+  }, [canAssignTickets]);
 
   // Handle status/priority/assignment update
   const handleUpdate = async (e) => {
@@ -72,13 +79,15 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
     setError(null);
 
     try {
-      const res = await api.updateTicket(ticketId, {
+      const updateData = {
         status,
         priority,
-        // Send null explicitly to unassign; omit field to keep existing would break null unassign
-        assignedToUserId: assignedTo,
         notes: noteText.trim() ? noteText.trim() : undefined
-      });
+      };
+      // Send null explicitly to unassign, but never submit assignment changes for Support Staff.
+      if (canAssignTickets) updateData.assignedToUserId = assignedTo;
+
+      const res = await api.updateTicket(ticketId, updateData);
 
       if (res.success) {
         setTicket(res.data);
@@ -169,7 +178,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                   </span>
                 </div>
 
-                {ticket.Status !== 'Closed' && (
+                {canManageTickets && ticket.Status !== 'Closed' && (
                   <button
                     onClick={() => setShowCloseModal(true)}
                     className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
@@ -257,7 +266,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                   </div>
 
                   {/* Support Controls Form */}
-                  {ticket.Status === 'Closed' ? (
+                  {canManageTickets && ticket.Status === 'Closed' ? (
                     <div className="bg-slate-100 border border-slate-200 rounded-xl p-5 text-center space-y-2">
                       <div className="flex items-center justify-center gap-2 text-slate-800 font-bold text-xs">
                         <Lock className="w-4 h-4 text-slate-600" />
@@ -267,7 +276,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                         This ticket is closed and read-only. No further modifications can be made.
                       </p>
                     </div>
-                  ) : (
+                  ) : canManageTickets ? (
                     <form onSubmit={handleUpdate} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                       <h4 className="font-bold text-slate-900 text-xs border-b border-slate-200 pb-2">
                         Support Team Actions
@@ -302,7 +311,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                         </select>
                       </div>
 
-                      <div>
+                      {canAssignTickets && <div>
                         <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Assigned To</label>
                         <select
                           value={assignedTo ?? ''}
@@ -311,11 +320,11 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                           disabled={updating}
                         >
                           <option value="">— Unassigned —</option>
-                          {users.map((u) => (
+                          {users.filter((u) => u.Role === 'Support Staff').map((u) => (
                             <option key={u.UserId} value={u.UserId}>{u.Name}</option>
                           ))}
                         </select>
-                      </div>
+                      </div>}
 
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Add Note</label>
@@ -337,7 +346,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                         {updating ? 'Saving Changes...' : 'Update Ticket'}
                       </button>
                     </form>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </>
@@ -346,7 +355,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
       </div>
 
       {/* Close Ticket Resolution Note Modal */}
-      {showCloseModal && (
+      {showCloseModal && canManageTickets && (
         <div className="fixed inset-0 z-60 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-fadeIn">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">

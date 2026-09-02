@@ -7,9 +7,11 @@ import TicketDetails from './components/TicketDetails';
 import api from './services/api';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'tickets', 'create'
+  const [activeTab, setActiveTab] = useState('tickets'); // 'dashboard', 'tickets', 'create'
   const [tickets, setTickets] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [selectedTicketId, setSelectedTicketId] = useState(null);
   
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,46 @@ export function App() {
     fetchPortalData();
   }, []);
 
+  // This is a demo profile selector, not authentication. Keep the selected
+  // database user between refreshes while still validating it against /users.
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const res = await api.getUsers();
+        if (!res.success || !Array.isArray(res.data)) return;
+
+        setUsers(res.data);
+        let savedUser = null;
+        try {
+          savedUser = JSON.parse(localStorage.getItem('serviceDeskCurrentUser'));
+        } catch {
+          localStorage.removeItem('serviceDeskCurrentUser');
+        }
+        const restoredUser = res.data.find((user) => user.UserId === savedUser?.UserId);
+        setCurrentUser(restoredUser || res.data[0] || null);
+      } catch (err) {
+        // Ticket functionality remains available if the non-critical selector cannot load.
+        console.error('Failed to load demo users:', err);
+      }
+    }
+    loadUsers();
+  }, []);
+
+  const handleUserChange = (userId) => {
+    const selectedUser = users.find((user) => user.UserId === Number(userId)) || null;
+    setCurrentUser(selectedUser);
+
+    if (selectedUser) {
+      localStorage.setItem('serviceDeskCurrentUser', JSON.stringify(selectedUser));
+      if (selectedUser.Role === 'Employee' && activeTab === 'dashboard') {
+        setActiveTab('tickets');
+      }
+    }
+  };
+
+  const canAccessDashboard = currentUser?.Role === 'Support Staff' || currentUser?.Role === 'Manager';
+  const canCreateTickets = true;
+
   const handleTicketCreated = () => {
     fetchPortalData();
     setActiveTab('tickets');
@@ -56,11 +98,19 @@ export function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       {/* Top Header Navbar */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        users={users}
+        currentUser={currentUser}
+        onUserChange={handleUserChange}
+        canAccessDashboard={canAccessDashboard}
+        canCreateTickets={canCreateTickets}
+      />
 
       {/* Main Page Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'dashboard' && (
+        {activeTab === 'dashboard' && canAccessDashboard && (
           <Dashboard
             onNavigateToTickets={() => setActiveTab('tickets')}
             onSelectCategory={(cat) => {
@@ -78,11 +128,12 @@ export function App() {
             onSelectTicket={(id) => setSelectedTicketId(id)}
             onRefresh={fetchPortalData}
             onCreateTicketClick={() => setActiveTab('create')}
+            canCreateTickets={canCreateTickets}
           />
         )}
 
-        {activeTab === 'create' && (
-          <TicketForm onTicketCreated={handleTicketCreated} />
+        {activeTab === 'create' && canCreateTickets && (
+          <TicketForm onTicketCreated={handleTicketCreated} currentUser={currentUser} />
         )}
       </main>
 
@@ -92,6 +143,7 @@ export function App() {
           ticketId={selectedTicketId}
           onClose={() => setSelectedTicketId(null)}
           onTicketUpdated={handleTicketUpdated}
+          currentUser={currentUser}
         />
       )}
 

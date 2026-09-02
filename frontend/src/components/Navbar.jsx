@@ -1,7 +1,15 @@
 import React from 'react';
 import { LayoutDashboard, Ticket, PlusCircle, ShieldCheck } from 'lucide-react';
 
-export const Navbar = ({ activeTab, setActiveTab }) => {
+export const Navbar = ({
+  activeTab,
+  setActiveTab,
+  users,
+  currentUser,
+  onUserChange,
+  canAccessDashboard,
+  canCreateTickets
+}) => {
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,7 +31,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
 
           {/* Navigation Items */}
           <nav className="flex items-center gap-2">
-            <button
+            {canAccessDashboard && <button
               onClick={() => setActiveTab('dashboard')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'dashboard'
@@ -33,7 +41,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Dashboard</span>
-            </button>
+            </button>}
 
             <button
               onClick={() => setActiveTab('tickets')}
@@ -47,7 +55,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
               <span>All Tickets</span>
             </button>
 
-            <button
+            {canCreateTickets && <button
               onClick={() => setActiveTab('create')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'create'
@@ -57,7 +65,26 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
             >
               <PlusCircle className="w-4 h-4" />
               <span>Create Ticket</span>
-            </button>
+            </button>}
+
+            <label className="sr-only" htmlFor="demo-user-selector">Current demo user</label>
+            <select
+              id="demo-user-selector"
+              value={currentUser?.UserId || ''}
+              onChange={(event) => onUserChange(event.target.value)}
+              className="max-w-44 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label="Current demo user"
+            >
+              {users.length === 0 ? (
+                <option value="">Loading users...</option>
+              ) : (
+                users.map((user) => (
+                  <option key={user.UserId} value={user.UserId}>
+                    {user.Name} ({user.Role})
+                  </option>
+                ))
+              )}
+            </select>
           </nav>
         </div>
       </div>

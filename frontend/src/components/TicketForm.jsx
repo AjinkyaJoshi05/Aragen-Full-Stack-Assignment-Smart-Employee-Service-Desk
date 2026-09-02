@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Send, CheckCircle2, AlertCircle, Loader2, ListFilter, Sparkles } from 'lucide-react';
 
-export const TicketForm = ({ onTicketCreated }) => {
+export const TicketForm = ({ onTicketCreated, currentUser }) => {
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -72,7 +72,8 @@ export const TicketForm = ({ onTicketCreated }) => {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category,
-        priority: formData.priority
+        priority: formData.priority,
+        createdByUserId: currentUser?.UserId
       });
 
       if (response.success) {
