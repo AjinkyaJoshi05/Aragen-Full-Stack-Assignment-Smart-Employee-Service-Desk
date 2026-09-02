@@ -76,6 +76,11 @@ export const api = {
     return request('/categories');
   },
 
+  // Fetch all users (for ticket assignment dropdown)
+  async getUsers() {
+    return request('/users');
+  },
+
   // Fetch aggregate dashboard metrics
   async getDashboardSummary() {
     return request('/dashboard/summary');

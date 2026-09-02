@@ -1,4 +1,5 @@
 import { TicketService } from '../services/ticket.service.js';
+import { UserService } from '../services/user.service.js';
 
 /**
  * Controller handling HTTP requests for Tickets
@@ -104,13 +105,40 @@ export class TicketController {
         });
       }
 
+      // Resolve assignedToUserId:
+      //   - undefined in body  => keep existing (pass undefined to service)
+      //   - null in body       => explicitly unassign (pass null to service)
+      //   - integer in body    => assign to that user (validate it exists first)
+      let resolvedAssignedTo = undefined;
+      if (assignedToUserId !== undefined) {
+        if (assignedToUserId === null) {
+          resolvedAssignedTo = null;
+        } else {
+          const parsedId = parseInt(assignedToUserId, 10);
+          if (isNaN(parsedId) || parsedId <= 0) {
+            return res.status(400).json({
+              success: false,
+              message: 'assignedToUserId must be a positive integer or null.'
+            });
+          }
+          const exists = await UserService.userExists(parsedId);
+          if (!exists) {
+            return res.status(400).json({
+              success: false,
+              message: `User with ID ${parsedId} does not exist.`
+            });
+          }
+          resolvedAssignedTo = parsedId;
+        }
+      }
+
       const updatedTicket = await TicketService.updateTicket(ticketId, {
         title,
         description,
         category,
         priority,
         status,
-        assignedToUserId: assignedToUserId ? parseInt(assignedToUserId, 10) : undefined,
+        assignedToUserId: resolvedAssignedTo,
         notes
       });
 

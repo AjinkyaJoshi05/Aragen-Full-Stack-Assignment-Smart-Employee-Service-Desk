@@ -14,6 +14,8 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
   // Update controls state
   const [status, setStatus] = useState('Open');
   const [priority, setPriority] = useState('Medium');
+  const [assignedTo, setAssignedTo] = useState(null); // null = Unassigned
+  const [users, setUsers] = useState([]);
   const [noteText, setNoteText] = useState('');
   const [updating, setUpdating] = useState(false);
   const [actionSuccess, setActionSuccess] = useState(null);
@@ -36,6 +38,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
           setTicket(res.data);
           setStatus(res.data.Status);
           setPriority(res.data.Priority);
+          setAssignedTo(res.data.AssignedToUserId ?? null);
         }
       } catch (err) {
         setError(err.message || 'Failed to fetch ticket details');
@@ -46,7 +49,22 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
     loadTicket();
   }, [ticketId]);
 
-  // Handle status/priority update
+  // Load assignable users for dropdown
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const res = await api.getUsers();
+        if (res.success && res.data) {
+          setUsers(res.data);
+        }
+      } catch {
+        // Non-critical: dropdown simply stays empty
+      }
+    }
+    loadUsers();
+  }, []);
+
+  // Handle status/priority/assignment update
   const handleUpdate = async (e) => {
     e.preventDefault();
     setUpdating(true);
@@ -57,6 +75,8 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
       const res = await api.updateTicket(ticketId, {
         status,
         priority,
+        // Send null explicitly to unassign; omit field to keep existing would break null unassign
+        assignedToUserId: assignedTo,
         notes: noteText.trim() ? noteText.trim() : undefined
       });
 
@@ -64,6 +84,7 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
         setTicket(res.data);
         setStatus(res.data.Status);
         setPriority(res.data.Priority);
+        setAssignedTo(res.data.AssignedToUserId ?? null);
         setNoteText('');
         setActionSuccess('Ticket updated successfully!');
         if (onTicketUpdated) onTicketUpdated();
@@ -278,6 +299,21 @@ export const TicketDetails = ({ ticketId, onClose, onTicketUpdated }) => {
                           <option value="Low">Low Priority (Green)</option>
                           <option value="Medium">Medium Priority (Yellow)</option>
                           <option value="High">High Priority (Red)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Assigned To</label>
+                        <select
+                          value={assignedTo ?? ''}
+                          onChange={(e) => setAssignedTo(e.target.value === '' ? null : parseInt(e.target.value, 10))}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900"
+                          disabled={updating}
+                        >
+                          <option value="">— Unassigned —</option>
+                          {users.map((u) => (
+                            <option key={u.UserId} value={u.UserId}>{u.Name}</option>
+                          ))}
                         </select>
                       </div>
 

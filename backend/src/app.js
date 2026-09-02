@@ -6,6 +6,7 @@ import healthRoutes from './routes/health.routes.js';
 import ticketRoutes from './routes/ticket.routes.js';
 import categoryRoutes from './routes/category.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import userRoutes from './routes/user.routes.js';
 import errorHandler from './middleware/errorHandler.js';
 
 // Load environment variables
@@ -33,6 +34,10 @@ app.use('/api/categories', categoryRoutes);
 // Dashboard Endpoints
 app.use('/dashboard', dashboardRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+
+// Users Endpoints (for ticket assignment dropdown)
+app.use('/users', userRoutes);
+app.use('/api/users', userRoutes);
 
 // Root route
 app.get('/', (req, res) => {
